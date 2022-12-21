@@ -47,20 +47,31 @@ namespace Filtration
             sum += x[0][i] * x[0][i];
          return Math.Sqrt(sum);
       }
+      List<double>CreateTimeMesh(double t0, double T, int k)
+      {
+         var time = new List<double>();
+         double h = (T - t0) / k;
+         for(int i = 0; i < k;i++)
+         {
+            time.Add(t0 + h * i);
+         }   
+         return time;
+      }
       public void Iteration()
       {
          p_kk = Parameters.S0 * Parameters.S0.Transpose();
          x_kk = Parameters.x0.Transpose();
          s_kk = Parameters.S0;
+         var timeMesh = CreateTimeMesh(0, 3, 1000);
          List<double> results = new List<double>();
          Matrix x_tr = Parameters.x0.Transpose();
          Matrix y_tr;
          Matrix y;
-         for (int i = 1; i < 3;i++)
+         for (int i = 1; i < timeMesh.Count;i++)
          {
-            Extrapolation(i, i - 1);
-            Filtration(i, i - 1);
-            x_tr = Parameters.GetF(i, i - 1) * x_tr;
+            Extrapolation(timeMesh[i], timeMesh[i - 1]);
+            Filtration(timeMesh[i], timeMesh[i - 1]);
+            x_tr = Parameters.GetF(timeMesh[i], timeMesh[i - 1]) * x_tr;
             y_tr = Parameters.H * x_tr;
             y = Parameters.H * x_k1k1 + Parameters.vk;
             var a = y_tr - y;
@@ -69,6 +80,11 @@ namespace Filtration
             p_kk = p_k1k1;
             x_kk = x_k1k1;
             s_kk = s_k1k1;
+         }
+         using (StreamWriter sw = new StreamWriter(@"out.txt"))
+         {
+            foreach (var item in results)
+               sw.WriteLine(item.ToString("E5"));
          }
       }
    }
