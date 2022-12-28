@@ -22,22 +22,18 @@ namespace Filtration
       void Extrapolation(double tk1, double tk)
       {
          var F_k1k = Parameters.GetF(tk1, tk);
-         x_k1k = F_k1k * x_kk;
+         x_k1k = F_k1k * x_kk + Parameters.GetQ(tk1, tk);
          s_k1k = F_k1k * s_kk;
          p_k1k = s_k1k * s_k1k.Transpose();
       }
       void Filtration(double tk1, double tk)
       {
          var Fk1 = s_k1k.Transpose() * Parameters.H.Transpose();
-         double a = (Fk1.Transpose()*Fk1 + Parameters.R).Mat[0][0];
-         a = 1.0 / a;
-         var tmp = Parameters.R * a;
-         tmp.Mat[0][0] = Math.Sqrt(tmp.Mat[0][0]);
-         Matrix gamma = 1 + tmp;
-         gamma.Mat[0][0] = 1.0 / gamma.Mat[0][0];
+         double a = 1.0 / (Fk1.Transpose() * Fk1 + Parameters.R).Mat[0][0];
          var K = a * s_k1k * Fk1;
-         x_k1k1 = x_k1k + K * ((Parameters.H * x_kk + Parameters.vk) - Parameters.H * x_k1k);
-         s_k1k1 = s_k1k * (Parameters.E - a * gamma.Mat[0][0] * Fk1 * Fk1.Transpose());
+         x_k1k1 = x_k1k + K * (yk1 - Parameters.H * x_k1k);
+         double gamma = 1.0 / (1 + Math.Sqrt(Parameters.R * a));
+         s_k1k1 = s_k1k * (1 - a * gamma * Fk1 * Fk1.Transpose());
          p_k1k1 = s_k1k1 * s_k1k1.Transpose();
       }
       double Norm(Matrix x)
@@ -59,21 +55,28 @@ namespace Filtration
       }
       public void Iteration()
       {
-         p_kk = Parameters.S0 * Parameters.S0.Transpose();
+         var S0 = Parameters.P0.LLTDecomposition();
+         p_kk = S0 * S0.Transpose();
          x_kk = Parameters.x0.Transpose();
-         s_kk = Parameters.S0;
-         var timeMesh = CreateTimeMesh(0, 3, 1000);
+         s_kk = S0;
+         var timeMesh = CreateTimeMesh(0, 3, 400);
          List<double> results = new List<double>();
+         List<Matrix> y_trList = new List<Matrix>();
+         List<Matrix> y_List = new List<Matrix>();
          Matrix x_tr = Parameters.x0.Transpose();
          Matrix y_tr;
          Matrix y;
-         for (int i = 1; i < timeMesh.Count;i++)
+         for (int i = 1; i < 100;i++)
          {
+            x_tr = Parameters.GetF(timeMesh[i], timeMesh[i - 1]) * x_tr + Parameters.GetQ(timeMesh[i], timeMesh[i - 1]);
+            yk1 = Parameters.H * x_tr + Parameters.vk;
             Extrapolation(timeMesh[i], timeMesh[i - 1]);
             Filtration(timeMesh[i], timeMesh[i - 1]);
-            x_tr = Parameters.GetF(timeMesh[i], timeMesh[i - 1]) * x_tr;
+            
             y_tr = Parameters.H * x_tr;
-            y = Parameters.H * x_k1k1 + Parameters.vk;
+            y = Parameters.H * x_k1k1;
+            y_trList.Add(y_tr);
+            y_List.Add(y);
             var a = y_tr - y;
             var b = Norm(y_tr);
             results.Add(Norm(a) / b);
@@ -85,6 +88,16 @@ namespace Filtration
          {
             foreach (var item in results)
                sw.WriteLine(item.ToString("E5"));
+         }
+         using (StreamWriter sw = new StreamWriter(@"y.txt"))
+         {
+            foreach (var item in y_List)
+               sw.WriteLine(item[0][0].ToString("E5"));
+         }
+         using (StreamWriter sw = new StreamWriter(@"y_tr.txt"))
+         {
+            foreach (var item in y_trList)
+               sw.WriteLine(item[0][0].ToString("E5"));
          }
       }
    }

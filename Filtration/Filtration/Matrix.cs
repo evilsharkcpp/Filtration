@@ -41,7 +41,28 @@ namespace Filtration
                result[j][i] = Mat[i][j];
          return result;
       }
-
+      public Matrix LLTDecomposition()
+      {
+         Matrix result = new Matrix(Mat.Length, Mat[0].Length);
+         result[0][0] = Math.Sqrt(Mat[0][0]);
+         for (int j = 1; j < Mat.Length; j++)
+            result[j][0] = Mat[j][0] / result[0][0];
+         for (int i = 1; i < Mat.Length; i++)
+         {
+            double sum = 0;
+            for (int p = 0; p < i; p++)
+               sum += result[i][p] * result[i][p];
+            result[i][i] = Math.Sqrt(Mat[i][i] - sum);
+            sum = 0;
+            for (int j = 0; j < Mat[0].Length; j++)
+            {
+               for (int p = 0; p < i; p++)
+                  sum += result[i][p] * result[j][p];
+               result[j][i] = 1.0 / result[i][i] * (Mat[j][i] - sum);
+            }
+         }
+         return result;
+      }
       public static Matrix operator +(Matrix a, Matrix b)
       {
          var result = new Matrix(a.Mat.Length, a.Mat[0].Length);
@@ -97,7 +118,7 @@ namespace Filtration
          var result = new Matrix(a.Mat.Length, a.Mat[0].Length);
          for (int i = 0; i < result.Mat.Length; i++)
             for (int j = 0; j < result.Mat[0].Length; j++)
-               if (i == j) result[i][j] = a[i][j] + b;  
+               result[i][j] = (i == j) ? (a[i][j] + b) : a[i][j];  
          return result;
       }
       public static Matrix operator +(double b, Matrix a)
@@ -105,7 +126,7 @@ namespace Filtration
          var result = new Matrix(a.Mat.Length, a.Mat[0].Length);
          for (int i = 0; i < result.Mat.Length; i++)
             for (int j = 0; j < result.Mat[0].Length; j++)
-               if (i == j) result[i][j] = a[i][j] + b;
+               result[i][j] = (i == j) ? (a[i][j] + b) : a[i][j];
          return result;
       }
       public static Matrix operator -(Matrix a, double b)
@@ -113,7 +134,7 @@ namespace Filtration
          var result = new Matrix(a.Mat.Length, a.Mat[0].Length);
          for (int i = 0; i < result.Mat.Length; i++)
             for (int j = 0; j < result.Mat[0].Length; j++)
-               if (i == j) result[i][j] = a[i][j] - b;
+               result[i][j] = (i == j) ? (a[i][j] - b) : a[i][j];
          return result;
       }
       public static Matrix operator -(double b, Matrix a)
@@ -121,7 +142,7 @@ namespace Filtration
          var result = new Matrix(a.Mat.Length, a.Mat[0].Length);
          for (int i = 0; i < result.Mat.Length; i++)
             for (int j = 0; j < result.Mat[0].Length; j++)
-               if (i == j) result[i][j] = b - a[i][j];
+               result[i][j] = (i == j) ? (b - a[i][j]) : a[i][j];
          return result;
       }
    }
