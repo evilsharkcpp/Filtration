@@ -43,14 +43,14 @@ namespace Filtration
             sum += x[0][i] * x[0][i];
          return Math.Sqrt(sum);
       }
-      List<double>CreateTimeMesh(double t0, double T, int k)
+      List<double> CreateTimeMesh(double t0, double T, int k)
       {
          var time = new List<double>();
          double h = (T - t0) / k;
-         for(int i = 0; i < k;i++)
+         for (int i = 0; i < k; i++)
          {
             time.Add(t0 + h * i);
-         }   
+         }
          return time;
       }
       public void Iteration()
@@ -66,13 +66,13 @@ namespace Filtration
          Matrix x_tr = Parameters.x0.Transpose();
          Matrix y_tr;
          Matrix y;
-         for (int i = 1; i < 100;i++)
+         for (int i = 1; i < timeMesh.Count; i++)
          {
             x_tr = Parameters.GetF(timeMesh[i], timeMesh[i - 1]) * x_tr + Parameters.GetQ(timeMesh[i], timeMesh[i - 1]);
             yk1 = Parameters.H * x_tr + Parameters.vk;
             Extrapolation(timeMesh[i], timeMesh[i - 1]);
             Filtration(timeMesh[i], timeMesh[i - 1]);
-            
+
             y_tr = Parameters.H * x_tr;
             y = Parameters.H * x_k1k1;
             y_trList.Add(y_tr);
